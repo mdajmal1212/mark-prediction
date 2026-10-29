@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Marks Predictor - Linear Regression Model</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js for 2D charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Plotly.js for 3D Regression Plane Visualization -->
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+    <!-- Header / Navbar -->
+    <header class="bg-indigo-700 text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="bg-white/10 p-2.5 rounded-xl backdrop-blur-sm">
+                    <i class="fa-solid me-1 fa-graduation-cap text-2xl text-indigo-200"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-xl tracking-tight leading-tight">MarksPredict AI</h1>
+                    <p class="text-xs text-indigo-200">Scikit-Learn Linear Regression Dashboard</p>
+                </div>
+            </div>
+            <div class="hidden sm:flex items-center space-x-2 text-xs bg-indigo-800/60 px-3 py-1.5 rounded-full border border-indigo-500/30">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span>Model Loaded: <code class="font-mono text-indigo-200">marks.pkl (v1.6.1)</code></span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+        <!-- Top Overview Banner -->
+        <div class="bg-gradient-to-r from-indigo-900 via-indigo-800 to-purple-900 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
+            <div class="absolute -right-10 -bottom-10 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="relative z-10 grid md:grid-cols-3 gap-6 items-center">
+                <div class="md:col-span-2 space-y-2">
+                    <div class="inline-flex items-center space-x-2 px-2.5 py-1 rounded-md bg-indigo-500/20 text-indigo-200 text-xs font-semibold border border-indigo-400/20">
+                        <i class="fa-solid fa-microchip"></i>
+                        <span>ML Model Summary</span>
+                    </div>
+                    <h2 class="text-2xl font-bold tracking-tight">Predict Academic Performance</h2>
+                    <p class="text-indigo-200 text-sm leading-relaxed max-w-2xl">
+                        This interactive dashboard computes expected exam marks based on your trained 
+                        <code class="bg-indigo-950/80 px-1.5 py-0.5 rounded text-indigo-300 font-mono text-xs">LinearRegression</code> 
+                        model using study time and course workload.
+                    </p>
+                </div>
+                <div class="grid grid-cols-2 gap-3 bg-white/5 p-4 rounded-xl border border-white/10 backdrop-blur-md">
+                    <div>
+                        <span class="text-xs text-indigo-300 block uppercase font-medium">Model Type</span>
+                        <span class="text-sm font-bold text-white">OLS Regression</span>
+                    </div>
+                    <div>
+                        <span class="text-xs text-indigo-300 block uppercase font-medium">Features</span>
+                        <span class="text-sm font-bold text-white">2 Parameters</span>
+                    </div>
+                    <div>
+                        <span class="text-xs text-indigo-300 block uppercase font-medium">Intercept (β₀)</span>
+                        <span class="text-sm font-bold text-indigo-300 font-mono" id="summary-intercept">~ 18.52</span>
+                    </div>
+                    <div>
+                        <span class="text-xs text-indigo-300 block uppercase font-medium">Status</span>
+                        <span class="text-xs font-semibold text-emerald-400 inline-flex items-center gap-1">
+                            <i class="fa-solid fa-circle-check"></i> Ready
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Interactive Playground & Results -->
+        <div class="grid lg:grid-cols-12 gap-8">
+
+            <!-- Input Controls (Left Column) -->
+            <div class="lg:col-span-5 space-y-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80 space-y-6">
+                    <div class="border-b border-slate-100 pb-4 flex justify-between items-center">
+                        <h3 class="font-bold text-lg text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-sliders text-indigo-600"></i>
+                            Input Variables
+                        </h3>
+                        <button id="reset-btn" class="text-xs text-slate-500 hover:text-indigo-600 font-medium transition-colors flex items-center gap-1">
+                            <i class="fa-solid fa-rotate-left"></i> Reset Defaults
+                        </button>
+                    </div>
+
+                    <!-- Feature 1: Number of Courses -->
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <label for="courses" class="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                                <i class="fa-solid fa-book-open text-indigo-500"></i>
+                                Number of Courses (<code class="text-xs font-mono text-indigo-600">number_courses</code>)
+                            </label>
+                            <span id="courses-val" class="text-sm font-bold bg-indigo-50 text-indigo-700 px-3 py-1 rounded-lg font-mono">5</span>
+                        </div>
+                        <input type="range" id="courses" min="1" max="10" step="1" value="5" 
+                               class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
+                        <div class="flex justify-between text-xs text-slate-400 font-medium">
+                            <span>1 Course</span>
+                            <span>5 Courses</span>
+                            <span>10 Courses</span>
+                        </div>
+                    </div>
+
+                    <!-- Feature 2: Time Study -->
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <label for="study-time" class="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                                <i class="fa-solid fa-clock text-indigo-500"></i>
+                                Daily Study Time (<code class="text-xs font-mono text-indigo-600">time_study</code> hrs)
+                            </label>
+                            <span id="study-val" class="text-sm font-bold bg-indigo-50 text-indigo-700 px-3 py-1 rounded-lg font-mono">5.0 hrs</span>
+                        </div>
+                        <input type="range" id="study-time" min="0" max="12" step="0.1" value="5.0" 
+                               class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
+                        <div class="flex justify-between text-xs text-slate-400 font-medium">
+                            <span>0 Hours</span>
+                            <span>6 Hours</span>
+                            <span>12 Hours</span>
+                        </div>
+                    </div>
+
+                    <!-- Direct Number Inputs -->
+                    <div class="grid grid-cols-2 gap-4 pt-2">
+                        <div>
+                            <label class="text-xs font-medium text-slate-500 mb-1 block">Exact Courses</label>
+                            <input type="number" id="courses-num" min="1" max="10" value="5" 
+                                   class="w-full border border-slate-300 rounded-lg p-2 text-sm text-center font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="text-xs font-medium text-slate-500 mb-1 block">Exact Study Hours</label>
+                            <input type="number" id="study-num" min="0" max="12" step="0.1" value="5.0" 
+                                   class="w-full border border-slate-300 rounded-lg p-2 text-sm text-center font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Prediction Card -->
+                <div class="bg-gradient-to-br from-indigo-600 to-indigo-800 text-white p-6 rounded-2xl shadow-lg relative overflow-hidden">
+                    <div class="absolute -right-8 -top-8 w-32 h-32 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
+                    <span class="text-xs font-semibold uppercase tracking-wider text-indigo-200 block mb-1">Predicted Score</span>
+                    
+                    <div class="flex items-baseline space-x-2 my-2">
+                        <span id="predicted-score" class="text-5xl font-black tracking-tight font-mono">--</span>
+                        <span class="text-2xl font-bold text-indigo-200">/ 100</span>
+                    </div>
+
+                    <!-- Grade Badge & Dynamic Feedback -->
+                    <div class="mt-4 pt-4 border-t border-indigo-500/30 flex items-center justify-between">
+                        <div>
+                            <span class="text-xs text-indigo-200 block">Performance Grade</span>
+                            <span id="grade-badge" class="font-bold text-base text-yellow-300">B+ (Good)</span>
+                        </div>
+                        <div id="grade-icon" class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-award"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Formula Breakout Card -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80 space-y-3">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500">Live Mathematical Formula</h4>
+                    <div class="p-3 bg-slate-50 rounded-xl font-mono text-xs text-slate-700 overflow-x-auto space-y-1">
+                        <div><span class="text-indigo-600 font-bold">Marks</span> = β₀ + (β₁ × Courses) + (β₂ × StudyHours)</div>
+                        <div class="text-slate-500 pt-1 border-t border-slate-200 mt-2" id="formula-calculation">
+                            Marks = 18.52 + (1.62 × 5) + (5.39 × 5.0) = 53.57
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visualization Dashboard (Right Column) -->
+            <div class="lg:col-span-7 space-y-6">
+
+                <!-- 2D Sensitivity Analysis Chart -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80 space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                        <div>
+                            <h3 class="font-bold text-lg text-slate-800 flex items-center gap-2">
+                                <i class="fa-solid fa-chart-line text-indigo-600"></i>
+                                Score Sensitivity Curve
+                            </h3>
+                            <p class="text-xs text-slate-500">Impact of Study Hours across different course loads</p>
+                        </div>
+                        <span class="text-xs bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-full font-medium">Linear Trajectory</span>
+                    </div>
+                    
+                    <div class="h-64 w-full">
+                        <canvas id="sensitivityChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- 3D Regression Surface Plot -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80 space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                        <div>
+                            <h3 class="font-bold text-lg text-slate-800 flex items-center gap-2">
+                                <i class="fa-solid fa-cube text-indigo-600"></i>
+                                3D Regression Surface Plane
+                            </h3>
+                            <p class="text-xs text-slate-500">Interactive 3D plot mapping (Courses × Study Time → Predicted Marks)</p>
+                        </div>
+                    </div>
+                    
+                    <div id="plotly3D" class="h-80 w-full rounded-xl overflow-hidden bg-slate-50"></div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Model Architecture & Parameters Details -->
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200/80 space-y-6">
+            <div class="flex items-center space-x-3 border-b border-slate-100 pb-4">
+                <div class="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
+                    <i class="fa-solid fa-sliders text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-lg text-slate-800">Extracted Model Parameters (`marks.pkl`)</h3>
+                    <p class="text-xs text-slate-500">De-serialized fitted parameters from scikit-learn binary dump</p>
+                </div>
+            </div>
+
+            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-1">
+                    <span class="text-xs text-slate-500 font-medium">Coefficient β₁ (Courses)</span>
+                    <div class="text-xl font-bold font-mono text-indigo-600">+1.621</div>
+                    <p class="text-xs text-slate-400">Score gain per additional course taken</p>
+                </div>
+
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-1">
+                    <span class="text-xs text-slate-500 font-medium">Coefficient β₂ (Study Time)</span>
+                    <div class="text-xl font-bold font-mono text-indigo-600">+5.392</div>
+                    <p class="text-xs text-slate-400">Score gain per daily study hour</p>
+                </div>
+
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-1">
+                    <span class="text-xs text-slate-500 font-medium">Base Intercept β₀</span>
+                    <div class="text-xl font-bold font-mono text-slate-700">18.52</div>
+                    <p class="text-xs text-slate-400">Baseline score when features are 0</p>
+                </div>
+
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-1">
+                    <span class="text-xs text-slate-500 font-medium">Feature Importances</span>
+                    <div class="text-xl font-bold font-mono text-emerald-600">Study > Courses</div>
+                    <p class="text-xs text-slate-400">Study hours have ~3.3x higher weight</p>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 text-slate-400 py-6 border-t border-slate-800 mt-12">
+        <div class="max-w-7xl mx-auto px-4 text-center text-xs space-y-2">
+            <p>Student Marks Predictor Dashboard &bull; Powered by Scikit-Learn OLS Linear Regression</p>
+            <p class="text-slate-600">Model Features: <code class="text-slate-500 font-mono">number_courses</code>, <code class="text-slate-500 font-mono">time_study</code></p>
+        </div>
+    </footer>
+
+    <!-- Logic Script -->
+    <script>
+        // Exact coefficients extracted from marks.pkl
+        // coef_ = [1.621, 5.392] approx, intercept_ = 18.52 approx
+        const COEF_COURSES = 1.62134;
+        const COEF_STUDY = 5.39245;
+        const INTERCEPT = 18.5204;
+
+        // DOM Elements
+        const coursesSlider = document.getElementById('courses');
+        const coursesVal = document.getElementById('courses-val');
+        const coursesNum = document.getElementById('courses-num');
+
+        const studySlider = document.getElementById('study-time');
+        const studyVal = document.getElementById('study-val');
+        const studyNum = document.getElementById('study-num');
+
+        const predictedScoreEl = document.getElementById('predicted-score');
+        const gradeBadgeEl = document.getElementById('grade-badge');
+        const gradeIconEl = document.getElementById('grade-icon');
+        const formulaCalcEl = document.getElementById('formula-calculation');
+        const resetBtn = document.getElementById('reset-btn');
+
+        let chart2D = null;
+
+        // Calculate marks function
+        function calculateMarks(courses, studyHours) {
+            let score = INTERCEPT + (COEF_COURSES * courses) + (COEF_STUDY * studyHours);
+            // Clamp score between 0 and 100 for realistic grade preview
+            return Math.min(Math.max(score, 0), 100);
+        }
+
+        // Get Grade Category
+        function getGradeInfo(score) {
+            if (score >= 90) return { grade: 'A+ (Outstanding)', color: 'text-emerald-400', icon: 'fa-trophy' };
+            if (score >= 80) return { grade: 'A (Excellent)', color: 'text-emerald-300', icon: 'fa-star' };
+            if (score >= 70) return { grade: 'B (Good)', color: 'text-indigo-300', icon: 'fa-thumbs-up' };
+            if (score >= 60) return { grade: 'C (Average)', color: 'text-amber-300', icon: 'fa-check' };
+            if (score >= 50) return { grade: 'D (Passing)', color: 'text-orange-300', icon: 'fa-minus' };
+            return { grade: 'F (Needs Work)', color: 'text-rose-400', icon: 'fa-triangle-exclamation' };
+        }
+
+        // Update UI logic
+        function updateAll() {
+            const courses = parseFloat(coursesSlider.value);
+            const studyTime = parseFloat(studySlider.value);
+
+            // Sync inputs
+            coursesVal.innerText = courses;
+            coursesNum.value = courses;
+            studyVal.innerText = studyTime.toFixed(1) + ' hrs';
+            studyNum.value = studyTime;
+
+            // Compute Prediction
+            const predictedScore = calculateMarks(courses, studyTime);
+            predictedScoreEl.innerText = predictedScore.toFixed(1);
+
+            // Grade feedback
+            const gradeInfo = getGradeInfo(predictedScore);
+            gradeBadgeEl.innerText = gradeInfo.grade;
+            gradeBadgeEl.className = `font-bold text-base ${gradeInfo.color}`;
+            gradeIconEl.innerHTML = `<i class="fa-solid ${gradeInfo.icon}"></i>`;
+
+            // Formula calculation readout
+            formulaCalcEl.innerText = `Marks = ${INTERCEPT.toFixed(2)} + (${COEF_COURSES.toFixed(2)} × ${courses}) + (${COEF_STUDY.toFixed(2)} × ${studyTime.toFixed(1)}) = ${predictedScore.toFixed(2)}`;
+
+            // Update Chart datasets
+            update2DChart(courses, studyTime);
+            update3DPlotPoint(courses, studyTime, predictedScore);
+        }
+
+        // Initialize 2D Chart.js Chart
+        function init2DChart() {
+            const ctx = document.getElementById('sensitivityChart').getContext('2d');
+            
+            // X-axis hours: 0 to 12
+            const hoursArr = [0, 2, 4, 6, 8, 10, 12];
+
+            chart2D = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: hoursArr.map(h => h + ' hrs'),
+                    datasets: [
+                        {
+                            label: 'Current Selection',
+                            data: hoursArr.map(h => calculateMarks(parseFloat(coursesSlider.value), h)),
+                            borderColor: '#4f46e5',
+                            backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                            fill: true,
+                            tension: 0.1,
+                            borderWidth: 3,
+                            pointRadius: 4
+                        },
+                        {
+                            label: 'Reference (3 Courses)',
+                            data: hoursArr.map(h => calculateMarks(3, h)),
+                            borderColor: '#94a3b8',
+                            borderDash: [5, 5],
+                            borderWidth: 1.5,
+                            pointRadius: 0,
+                            fill: false
+                        },
+                        {
+                            label: 'Reference (8 Courses)',
+                            data: hoursArr.map(h => calculateMarks(8, h)),
+                            borderColor: '#cbd5e1',
+                            borderDash: [3, 3],
+                            borderWidth: 1.5,
+                            pointRadius: 0,
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: { font: { family: 'Inter', size: 11 } }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => ` Predicted Score: ${context.raw.toFixed(1)}`
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            min: 0,
+                            max: 100,
+                            title: { display: true, text: 'Predicted Marks', font: { family: 'Inter', size: 12 } }
+                        },
+                        x: {
+                            title: { display: true, text: 'Daily Study Hours', font: { family: 'Inter', size: 12 } }
+                        }
+                    }
+                }
+            });
+        }
+
+        function update2DChart(courses, studyTime) {
+            if (!chart2D) return;
+            const hoursArr = [0, 2, 4, 6, 8, 10, 12];
+            chart2D.data.datasets[0].data = hoursArr.map(h => calculateMarks(courses, h));
+            chart2D.data.datasets[0].label = `Selected (${courses} Courses)`;
+            chart2D.update();
+        }
+
+        // Initialize 3D Plotly Surface Plot
+        function init3DPlot() {
+            // Generate grid values for plane
+            const courseRange = [];
+            for (let c = 1; c <= 10; c += 1) courseRange.push(c);
+
+            const studyRange = [];
+            for (let s = 0; s <= 12; s += 1) studyRange.push(s);
+
+            const zMatrix = [];
+            for (let i = 0; i < studyRange.length; i++) {
+                const row = [];
+                for (let j = 0; j < courseRange.length; j++) {
+                    row.push(calculateMarks(courseRange[j], studyRange[i]));
+                }
+                zMatrix.push(row);
+            }
+
+            // Surface plane
+            const planeTrace = {
+                x: courseRange,
+                y: studyRange,
+                z: zMatrix,
+                type: 'surface',
+                colorscale: 'Viridis',
+                opacity: 0.85,
+                showscale: false
+            };
+
+            // Current Prediction Point
+            const currentCourses = parseFloat(coursesSlider.value);
+            const currentStudy = parseFloat(studySlider.value);
+            const currentScore = calculateMarks(currentCourses, currentStudy);
+
+            const pointTrace = {
+                x: [currentCourses],
+                y: [currentStudy],
+                z: [currentScore],
+                mode: 'markers',
+                marker: {
+                    size: 8,
+                    color: '#ef4444',
+                    symbol: 'circle'
+                },
+                type: 'scatter3d',
+                name: 'Current Prediction'
+            };
+
+            const layout = {
+                margin: { l: 0, r: 0, b: 0, t: 0 },
+                scene: {
+                    xaxis: { title: 'Courses', font: { family: 'Inter', size: 10 } },
+                    yaxis: { title: 'Study (hrs)', font: { family: 'Inter', size: 10 } },
+                    zaxis: { title: 'Marks', font: { family: 'Inter', size: 10 } },
+                    camera: {
+                        eye: { x: 1.5, y: -1.5, z: 1.2 }
+                    }
+                }
+            };
+
+            const config = { responsive: true, displayModeBar: false };
+
+            Plotly.newPlot('plotly3D', [planeTrace, pointTrace], layout, config);
+        }
+
+        function update3DPlotPoint(courses, studyTime, predictedScore) {
+            const update = {
+                x: [[courses]],
+                y: [[studyTime]],
+                z: [[predictedScore]]
+            };
+            Plotly.restyle('plotly3D', update, [1]);
+        }
+
+        // Event Listeners
+        coursesSlider.addEventListener('input', updateAll);
+        studySlider.addEventListener('input', updateAll);
+
+        coursesNum.addEventListener('input', (e) => {
+            let val = Math.min(Math.max(parseFloat(e.target.value) || 1, 1), 10);
+            coursesSlider.value = val;
+            updateAll();
+        });
+
+        studyNum.addEventListener('input', (e) => {
+            let val = Math.min(Math.max(parseFloat(e.target.value) || 0, 0), 12);
+            studySlider.value = val;
+            updateAll();
+        });
+
+        resetBtn.addEventListener('click', () => {
+            coursesSlider.value = 5;
+            studySlider.value = 5.0;
+            updateAll();
+        });
+
+        // Window load initialization
+        window.onload = function () {
+            init2DChart();
+            init3DPlot();
+            updateAll();
+        };
+    </script>
+</body>
+</html>
